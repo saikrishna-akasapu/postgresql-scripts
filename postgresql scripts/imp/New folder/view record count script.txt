@@ -1,0 +1,31 @@
+  do $$
+  declare
+   schema_name text:='stpl_hims_p_m_dbo';
+   view_name text;
+   full_view text;
+   qry text;
+   result int;
+   view_list text[]:=ARRAY[
+'vw_getall_st_ip_patients', 
+'vw_grn_detail_rpt_apex', 
+'vw_grp_bill_amt_dtls', 
+'vw_grpbill_trn_dtl',
+'vw_handover_amt',
+'vw_hc_emp_ward', 
+'vw_indexparameters_inuagural'
+   ];
+
+   BEGIN
+   FOREACH view_name in ARRAY view_list
+   loop
+     full_view:=format('%I.%I',schema_name,view_name);
+	 qry:=format(
+'select count(*)  from %s;',full_view);
+execute qry INTO result;
+ 
+raise notice 'view: % ,row count: %',full_view,result;
+
+end loop;
+end $$;
+
+	 

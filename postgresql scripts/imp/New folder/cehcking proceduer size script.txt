@@ -1,0 +1,70 @@
+Get-ChildItem "\\qardp01\shared\MIGRATION POSTGRESQL\SRINIVAS\SRIKARA_HIMS_P_M\PROCEDURES\*.sql" | Select-Object Name,@{Name="SizeKB";Expression={[math]::Round($_.Length/1KB,2)}}
+
+
+
+
+Get-ChildItem "\\qardp01\shared\MIGRATION POSTGRESQL\SRINIVAS\SRIKARA_HIMS_P_M\PROCEDURES\*.sql" | Select-Object Name,@{Name="SizeKB";Expression={[math]::Round($_.Length/1KB,2)}}
+
+
+
+$procnames =@(
+"pr_getall_st_purchaseorder_list_details",
+"pr_getall_st_purchaseorder_list_details_grid",
+"pr_getall_st_purchaseorder_list_lookup_new",
+"pr_getall_st_purchaseorder_list_lookup_new_gatepass",
+"pr_getall_st_rx_pims_all_in_one",
+"pr_getall_st_san",
+"pr_getall_st_scn",
+"pr_getall_st_sec",
+"pr_getall_st_stn",
+"pr_getall_st_str",
+"pr_getall_st_str_item",
+"pr_getall_st_supplier_payments_list",
+"pr_getall_st_user_to_location_auto",
+"pr_getall_st_user_to_location_mapping",
+"pr_getall_st_workorder",
+"pr_getall_vend_csv_mapping",
+"pr_get_advance_distribution",
+"pr_get_all_entity_prc",
+"pr_get_approx_bill_report",
+"pr_get_approx_bill_report_new",
+"pr_get_auto_item_batchnos",
+"pr_get_auto_item_services",
+"pr_get_auto_item_services_nrc_lookup",
+"pr_get_auto_item_services_posip",
+"pr_get_auto_item_services_posop",
+"pr_get_auto_item_services_posop_lookup",
+"pr_get_barcode_item_details",
+"pr_get_barcode_item_details_posip",
+"pr_get_companyinfo_paging_patient",
+"pr_get_consignment_transit_items",
+"pr_get_consum_stock_details",
+"pr_get_dept_against_batch_det",
+"pr_get_doctor_priscription_lookup",
+"pr_get_document_payment_mode_edit",
+"pr_get_drug_fill_item_qty_pims",
+"pr_get_drug_fill_item_qty_pims_new",
+"pr_get_drug_indent_dispatch_tat_report",
+"pr_get_drug_prfle_items_pos",
+"pr_get_drug_prfle_items_pos_ip",
+"pr_get_fo_recpay_det",
+"pr_get_fo_recpay_det_advance_details",
+"pr_get_grn",
+"pr_get_gst_report_purchase_op_sales_returns_data",
+"pr_get_indent_po_pendingqty_item",
+"pr_get_ins_mul_po_generation",
+"pr_get_inventory_master_report_abc_analysis",
+"pr_get_inventory_master_report_item_expiry"
+
+
+)
+Get-ChildItem "\\qardp01\shared\MIGRATION POSTGRESQL\SRINIVAS\SRIKARA_HIMS_P_M\PROCEDURES\*.sql"|
+Where-Object {
+				$file = $_.Name.ToLower()
+                $procnames | ForEach-Object {
+				$pattern = "*$($_.ToLower()).sql"
+			    if ($file -eq "$($_.ToLower()).sql" -or $file -like "*.$($_.ToLower()).sql" -or $file -like "*$($_.ToLower()).sql") { return $true }
+			}
+			
+		} |
+Select-Object Name,@{Name="SizeKB";Expression={[math]::Round($_.Length/1KB,2)}}

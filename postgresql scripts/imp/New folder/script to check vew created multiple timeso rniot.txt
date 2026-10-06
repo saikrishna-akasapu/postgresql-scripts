@@ -1,0 +1,10 @@
+select table_name
+,count(*)as view_count
+from information_schema.views
+where table_schema in ('stpl_hims_p_m_dbo')
+and table_name in(
+
+
+)
+group by table_name
+ having count(*)>1;

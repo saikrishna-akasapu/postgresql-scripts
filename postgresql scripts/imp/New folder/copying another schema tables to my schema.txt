@@ -1,0 +1,13 @@
+do $$
+declare
+tb1 text;
+begin
+  for tb1 in
+    select tablename
+	from pg_tables
+	where schemaname='stpl627'
+	loop
+	 execute format('create table stpl626.%I (LIKE STPL627.%I INCLUDiNG ALL)',tb1,tb1);
+	 execute format('insert into stpl626.%I select * from stpl627.%I',tb1,tb1);
+	 end loop;
+end $$;

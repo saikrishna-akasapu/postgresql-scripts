@@ -1,0 +1,32 @@
+select proname as procedure_name
+,count(*)as procedure_count
+from
+pg_proc p
+join
+ pg_namespace n on n.oid=p.pronamespace
+ where n.nspname in('stpl_hims_p_m_dbo' ,'stpl_hims_p_m_sq')
+ and p.prokind='p'
+ and proname in (
+'pr_get_item_stp',
+'pr_get_vehicle_details_ext',
+'pr_get_fb_iprating_ad_graph_y',
+'pr_get_service_price_cmp',
+'pr_get_st_department_auto',
+'pr_ins_backup_log_details',
+'dd_pr_get_dms_records',
+'pr_get_assay_sample_bills_vw',
+'pr_get_invs_can_details_report',
+'pr_get_moduleidmult',
+'pr_get_pat_spe_proc',
+'pr_get_antibiotics_det_by_comp',
+'pr_get_app_patient',
+'pr_get_st_rejected_items_in_micl_report_sms',
+'phr_pr_get_lifestyledetails',
+'phr_pr_get_category_type',
+'pr_del_customer_sub',
+'pr_get_st_allergies_auto'
+
+
+ )
+ group by p.proname
+ having count(*)>1;

@@ -1,0 +1,26 @@
+do
+$$
+declare
+r record;
+new_def text;
+begin
+for r in
+select p.oid,
+pg_get_functiondef(p.oid)as func_def
+from pg_proc p
+join pg_namespace n on (n.oid=p.pronamespace)
+where n.nspname='stpl_hims_p_m_dbo'
+and p.prokind='f'
+and p.proname in (
+'fn_tr_ins_adt_bed_mngmnt_std'
+)
+loop
+new_def:=regexp_replace(
+r.func_def,
+'(\$[A-Za-z0-9_]*\$)',
+E'\\1\n\n/*\n------------------------------------------------------------\nDESCRIPTION:\nCHANGE HISTORY\nVERSION    DATE     AUTHOR     CHANGE DESCRIPTION\n2.0     27-01-2026    VINOD     MIGRATION TO PG\n---------------------------------------------------------------------------\n*/\n',
+1
+);
+execute new_def;
+end loop;
+end $$;

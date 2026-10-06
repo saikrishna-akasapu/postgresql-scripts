@@ -1,0 +1,996 @@
+
+DROP table if exists temp_vw_service_getdata;
+
+CREATE temp table  temp_vw_service_getdata
+ AS
+ SELECT s.tariff_id,
+    s.service_id,
+    s.service_cd,
+    s.service_name,
+    s.service_unicode,
+    s.serviceclass_id,
+    s.service_group_id,
+    s.coverage_id,
+    s.service_type_id,
+    s.billing_head_id,
+    s.effect_from_dt,
+    s.effect_to_dt,
+    s.is_foreign_service,
+    s.record_status,
+    s.srv_gender_id,
+    s.is_appointment,
+    s.is_consent_form,
+    s.is_pre_requisit,
+    s.min_ceiling,
+    s.max_ceiling,
+    s.is_quantity_edit,
+    s.is_price_edit,
+    s.num_of_days,
+    s.from_age,
+    s.to_age,
+    s.max_opt_services_allowed,
+    s.is_srv_guidelines_required,
+    s.is_srv_checklist_required,
+    s.is_srv_instruction_req,
+    atx.tax_pct,
+    s.uni_service_type_id,
+    s.is_doctor_required,
+    COALESCE(s.is_gst_applicable, 'N') AS is_gst_applicable,
+    s.sac_cd,
+    s.is_tax_include_exclude,
+    COALESCE(atx.sgst_pct, 0) AS sgst_pct,
+    COALESCE(atx.cgst_pct, 0) AS cgst_pct,
+    s.phar_limit_per
+   FROM stpl_hims_p_m_dbo.service s
+     LEFT JOIN stpl_hims_p_m_dbo.adt_tax atx ON atx.tax_id = s.tax_id AND (atx.record_status = ANY (ARRAY['A', 'I']))
+  WHERE (s.record_status = ANY (ARRAY['A', 'I'])) AND s.tariff_id = 1
+UNION ALL
+ SELECT s.tariff_id,
+    s.general_service_id AS service_id,
+    s.service_cd,
+    s.service_name,
+    r.service_unicode,
+    s.service_class_id AS serviceclass_id,
+    r.service_group_id,
+    s.coverage_id,
+    r.service_type_id,
+    s.billi_head_id AS billing_head_id,
+    s.effect_from_dt,
+    s.effect_to_dt,
+    s.is_foreign_service,
+    s.record_status,
+    r.srv_gender_id,
+    r.is_appointment,
+    r.is_consent_form,
+    r.is_pre_requisit,
+    r.min_ceiling,
+    r.max_ceiling,
+    r.is_quantity_edit,
+    r.is_price_edit,
+    r.num_of_days,
+    r.from_age,
+    r.to_age,
+    r.max_opt_services_allowed,
+    r.is_srv_guidelines_required,
+    r.is_srv_checklist_required,
+    r.is_srv_instruction_req,
+    atx.tax_pct,
+    r.uni_service_type_id,
+    r.is_doctor_required,
+    COALESCE(r.is_gst_applicable, 'N') AS is_gst_applicable,
+    r.sac_cd,
+    r.is_tax_include_exclude,
+    COALESCE(atx.sgst_pct, 0) AS sgst_pct,
+    COALESCE(atx.cgst_pct, 0) AS cgst_pct,
+    r.phar_limit_per
+   FROM stpl_hims_p_m_dbo.tariff_service s
+     JOIN stpl_hims_p_m_dbo.service r ON r.service_id = s.general_service_id
+     LEFT JOIN stpl_hims_p_m_dbo.tariff t ON t.tariff_id = s.tariff_id
+     LEFT JOIN stpl_hims_p_m_dbo.adt_tax atx ON atx.tax_id = r.tax_id AND (atx.record_status = ANY (ARRAY['A', 'I']))
+  WHERE (s.record_status = ANY (ARRAY['A', 'I'])) AND t.record_status = 'A' AND s.tariff_id <> 1;
+
+ 
+DROP TABLE IF EXISTS  temp_vw_service_price_op_v2_ben;
+CREATE TEMP TABLE  temp_vw_service_price_op_v2_ben
+ AS
+ SELECT s.service_id,
+    s.service_cd,
+    COALESCE(NULLIF(s.service_name, ''), s.service_name) AS service_name,
+    st.service_type_id,
+    s.service_group_id,
+    s.serviceclass_id,
+    s.effect_from_dt,
+    s.effect_to_dt,
+    s.record_status,
+    s.coverage_id,
+    de.department_id,
+    s.tariff_id,
+    s.srv_gender_id,
+    s.from_age,
+    s.to_age,
+    s.is_price_edit AS rate_edit,
+    s.is_srv_checklist_required,
+    s.is_foreign_service,
+    s.min_ceiling,
+    s.max_ceiling,
+    s.is_pre_requisit,
+    s.num_of_days,
+    s.is_quantity_edit,
+    s.is_srv_instruction_req,
+    s.is_srv_guidelines_required,
+    s.is_consent_form,
+    s.is_doctor_required,
+    s.billing_head_id,
+    s.is_appointment,
+    s.service_unicode,
+    s.uni_service_type_id,
+    s.is_gst_applicable,
+    s.tax_pct,
+    s.is_tax_include_exclude,
+    s.sgst_pct,
+    s.cgst_pct,
+    s.sac_cd,
+    s.max_opt_services_allowed
+   FROM temp_vw_service_getdata s
+     JOIN stpl_hims_p_m_dbo.service_group sg ON s.service_group_id = sg.service_group_id
+     LEFT JOIN stpl_hims_p_m_dbo.service_type st ON s.service_type_id = st.service_type_id
+     LEFT JOIN stpl_hims_p_m_ma.department de ON sg.department_id = de.department_id
+  WHERE s.service_id <> 2 AND s.record_status = 'A';
+ 
+DROP TABLE IF EXISTS TEMP_VW_SERVICE_PRICE_OP;
+CREATE TEMP TABLE TEMP_VW_SERVICE_PRICE_OP AS (
+SELECT 
+			S.SERVICE_ID,
+			S.SERVICE_CD,
+			S.SERVICE_NAME,
+			S.SERVICE_TYPE_ID,
+			S.SERVICE_GROUP_ID,
+			SERVICECLASS_ID,
+			S.EFFECT_FROM_DT,
+			S.EFFECT_TO_DT,
+			S.TARIFF_ID,
+			S.DEPARTMENT_ID ,
+			S.IS_PRE_REQUISIT,
+			S.SRV_GENDER_ID ,
+			S.MIN_CEILING ,
+			S.MAX_CEILING ,
+			S.NUM_OF_DAYS ,
+			S.IS_QUANTITY_EDIT ,
+			S.RATE_EDIT,
+			S.IS_APPOINTMENT,
+			S.FROM_AGE,
+			S.TO_AGE,
+			S.MAX_OPT_SERVICES_ALLOWED,
+			S.IS_SRV_GUIDELINES_REQUIRED,
+			S.IS_CONSENT_FORM,
+			S.IS_SRV_CHECKLIST_REQUIRED,
+			S.IS_SRV_INSTRUCTION_REQ,
+			S.SERVICE_UNICODE,
+			S.UNI_SERVICE_TYPE_ID,
+			S.IS_DOCTOR_REQUIRED,
+			S.BILLING_HEAD_ID,
+			S.IS_GST_APPLICABLE,
+			S.TAX_PCT,
+			S.IS_TAX_INCLUDE_EXCLUDE,
+			S.SGST_PCT,
+			S.CGST_PCT,
+			S.SAC_CD,
+			RECORD_STATUS,
+			IS_FOREIGN_SERVICE,
+			COVERAGE_ID 
+		FROM temp_vw_service_price_op_v2_ben AS S
+		WHERE S.SERVICE_ID = 6
+				AND S.COVERAGE_ID <> 1
+				AND (S.RECORD_STATUS) = 'A'
+			);
+
+			
+ 
+	DROP TABLE IF EXISTS TEMP_INNER_QUERY;
+	CREATE TEMP TABLE TEMP_INNER_QUERY AS(
+	 SELECT
+										S.SERVICE_ID,
+										SERVICE_CD,
+										S.SERVICE_NAME,
+										S.SERVICE_TYPE_ID,
+										STPL_HIMS_P_M_DBO.FN_GET_SERVICETYPEDESC (S.SERVICE_TYPE_ID) SERVICE_TYPE_NAME,
+										S.SERVICE_GROUP_ID,
+										STPL_HIMS_P_M_DBO.FN_GET_SERVICE_GROUP (S.SERVICE_GROUP_ID) SERVICE_GROUP,
+										SERVICECLASS_ID,
+										0 AS CONSULTATION_TYPE_ID,
+										0 DOCTOR_ID,
+										2 PATIENT_CLASS_ID,
+										S.EFFECT_FROM_DT,
+										S.EFFECT_TO_DT,
+										'A' AS RECORD_STATUS,
+										S.TARIFF_ID,
+										S.DEPARTMENT_ID AS DEPARTMENT_ID,
+										S.SERVICE_CD EQUI_SERVICE_CD,
+										S.SERVICE_NAME EQUI_SERVICE_NAME,
+										IS_FOREIGN_SERVICE,
+										S.IS_PRE_REQUISIT IS_CLINICAL_HIST_REQ,
+										S.SRV_GENDER_ID GENDER_ID,
+										A.HISTORY_TYPE HISTORY_TYPE_ID,
+										S.MIN_CEILING MIN_PRICE,
+										S.MAX_CEILING MAX_PRICE,
+										S.NUM_OF_DAYS NO_NEED_SRV,
+										S.IS_CONSENT_FORM CONCERN_FORM_REQ,
+										NULL AS PRIV_SRV_POSTED_DT,
+										S.NUM_OF_DAYS NO_NEED_DAYS,
+										S.IS_QUANTITY_EDIT QYT_EDIT,
+										S.RATE_EDIT,
+										S.IS_APPOINTMENT,
+										COALESCE(S.FROM_AGE, 0) FROM_AGE,
+										COALESCE(S.TO_AGE, 0) TO_AGE,
+										NULL TARIFF_CD,
+										(
+											CASE
+												WHEN AV.ADMN_ID IS NOT NULL THEN 'Y'
+												ELSE 'N'
+											END
+										) OP_TRAN_ALLOWED,
+										CRS.QTY AS REFRL_QTY,
+										COALESCE(CI.VALIDATION_TYPE_CD, C2.VALIDATION_TYPE_CD, 'N') NON_SHOW,
+										(
+											CASE
+												WHEN SD.SERVICE_ID IS NOT NULL THEN 'Y'
+												ELSE 'N'
+											END
+										) SERVICE_DEPENDS,
+										STPL_HIMS_P_M_DBO.FN_GET_RFRL_UTL_QTY 
+										(
+											'SRH0148919',
+											0,
+											S.SERVICE_ID::INT,
+											1
+										) UTILIZED_REFRL_QTY,
+										S.MAX_OPT_SERVICES_ALLOWED,
+										STPL_HIMS_P_M_DBO.FN_GET_CMPNY_RUL_QTY 
+										(
+											47,
+											6,
+											1,
+											'SRH0148919'
+										) UTILZ_CMP_RULE_QTY,
+										C2.QUANTITY CMO_RUL_QTY,
+										A.IS_REMARKS_MANDATORY,
+										S.IS_SRV_GUIDELINES_REQUIRED,
+										S.IS_CONSENT_FORM,
+										S.IS_SRV_CHECKLIST_REQUIRED,
+										S.IS_SRV_INSTRUCTION_REQ,
+										STPL_HIMS_P_M_DBO.FN_GET_PKG_SRV_STAT_PRCNT_DTLS (NULL, NULL, S.SERVICE_ID::INT) AS DISCOUNT_PERCENT,
+										CASE
+											WHEN CS.SERVICE_ID > 0 THEN 'Y'
+											ELSE 'N'
+										END CMP_PKG_EXIST,
+										S.SERVICE_UNICODE,
+										S.UNI_SERVICE_TYPE_ID,
+										NULL FROM_DT,
+										NULL TO_DT,
+										NULL SERVICE_QUESTION_TEMPLATE_ID,
+										S.IS_DOCTOR_REQUIRED,
+										NULL IS_SCHEDULE_REQUIRED,
+										CASE
+											WHEN STPL_HIMS_P_M_DBO.FN_GET_SLOTS_FOR_EMERGENCY ('OP', 1) = 'Y' THEN '2'
+											ELSE '1'
+										END VISIT_TYPE,
+										S.BILLING_HEAD_ID,
+										(
+											CASE
+												WHEN OP.SERVICE_ID = S.SERVICE_ID THEN 'Y'
+												ELSE 'N'
+											END
+										) AS IS_FAVORITE_SERVICE,
+										S.IS_GST_APPLICABLE,
+										S.TAX_PCT,
+										S.IS_TAX_INCLUDE_EXCLUDE,
+										COALESCE(S.SGST_PCT, 0) AS SGST_PCT,
+										COALESCE(S.CGST_PCT, 0) AS CGST_PCT,
+										S.SAC_CD
+									FROM
+										TEMP_VW_SERVICE_PRICE_OP S
+										INNER JOIN STPL_HIMS_P_M_DBO.SERVICE_LOC SL ON SL.SERVICE_ID = S.SERVICE_ID
+										AND SL.GRP_ID = 1
+										AND SL.ORG_ID = 1
+										AND SL.LOC_ID = 1
+										AND (SL.RECORD_STATUS) = 'A'
+										LEFT JOIN STPL_HIMS_P_M_DBO.CMPNY_REFERAL_LETTER_SRV CRS ON 
+										(
+											CRS.CMPNY_REFERAL_LETTER_ID = 0
+											AND CRS.SERVICE_ID = S.SERVICE_ID
+										)
+										LEFT JOIN STPL_HIMS_P_M_DBO.ASSAY A ON 
+										(
+											S.SERVICE_ID = A.SERVICE_ID
+											AND A.GRP_ID = 1
+										)
+										LEFT JOIN STPL_HIMS_P_M_DBO.VW_ADT_ADMN_OP_SRV AV ON 
+										(
+											S.SERVICE_ID = AV.SERVICE_ID
+											AND ADMN_ID = 0
+										)
+										LEFT JOIN STPL_HIMS_P_M_DBO.VW_SERVICE_DEPENDENTS SD ON (S.SERVICE_ID = SD.SERVICE_ID)
+										LEFT JOIN STPL_HIMS_P_M_DBO.VW_CMP_VALIDATION CI ON 
+										(
+											CI.CMPNY_REFERAL_LETTER_ID = 0
+											AND CI.UMR_NO = 'SRH0148919'
+											AND CI.COMPANY_ID = 47
+											AND CI.SERVICE_ID = S.SERVICE_ID
+										)
+										LEFT JOIN STPL_HIMS_P_M_DBO.VW_CMP_RULE_SRV C2 ON 
+										(
+											C2.COMPANY_ID = 47
+											AND C2.SERVICE_ID = 6
+										)
+										LEFT JOIN STPL_HIMS_P_M_DBO.COMPANY_SERVICE CS ON 
+										(
+											CS.CMP_ID = 47
+											AND CS.SERVICE_ID = 6
+											AND (CS.RECORD_STATUS) = 'A'
+										)
+										LEFT JOIN 
+										(
+											SELECT DISTINCT
+												OPF.SERVICE_ID
+											FROM
+												STPL_HIMS_P_M_DBO.OP_FAVORITE_SERVICES OPF
+											WHERE
+												(OPF.RECORD_STATUS) = 'A'
+												AND NOT EXISTS 
+												(
+													SELECT
+														1
+													FROM
+														STPL_HIMS_P_M_DBO.OP_FAVORITE_SERVICES F
+													WHERE
+														F.SERVICE_ID = OPF.SERVICE_ID
+														AND F.USER_ID = 1
+														AND (F.RECORD_STATUS) = 'D'
+												)
+										) AS OP ON OP.SERVICE_ID = S.SERVICE_ID
+									WHERE
+										EXISTS 
+										(
+											SELECT
+												1
+											FROM
+												STPL_HIMS_P_M_DBO.VW_USER_ROLE_SRV_GROUPS UR
+											WHERE
+												UR.SERVICE_GROUP_ID = S.SERVICE_GROUP_ID
+												AND (S.RECORD_STATUS) = 'A'
+												AND UR.USER_ID = 1
+										)
+										-- AND S.SERVICE_ID = 8
+										-- AND S.COVERAGE_ID <> 1
+										-- AND (S.RECORD_STATUS) = 'A'
+										AND
+										CAST
+										(
+											330 * INTERVAL '1 MINUTE' + CURRENT_TIMESTAMP(3) AT TIME ZONE 'UTC' AS DATE
+										) BETWEEN CAST(S.EFFECT_FROM_DT AS DATE) AND CAST(S.EFFECT_TO_DT AS DATE)
+										
+	);
+	
+	
+	DROP TABLE IF EXISTS TEMP_SERVICE_COMPANY_PRICE;
+	CREATE TEMP TABLE TEMP_SERVICE_COMPANY_PRICE AS(
+
+	WITH CTE_PRICE_PARAMS AS (
+		SELECT DISTINCT
+			S.SERVICE_ID,
+			S.DOCTOR_ID,
+			S.PATIENT_CLASS_ID
+		FROM TEMP_INNER_QUERY S
+	)
+	, CTE_PRICES AS (
+		SELECT SP.* 
+		FROM CTE_PRICE_PARAMS PP
+		LEFT OUTER JOIN LATERAL STPL_HIMS_P_M_DBO.FN_GET_SERVICE_COMPANY_PRICE 
+								(
+									PP.SERVICE_ID::INT,
+									1,
+									PP.DOCTOR_ID,
+									NULL,
+									PP.PATIENT_CLASS_ID,
+									NULL,
+									NULL,
+									1,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									NULL,
+									47,
+									NULL
+								) AS SP ON TRUE 
+	)
+	SELECT DISTINCT
+		S.SERVICE_ID,
+		S.DOCTOR_ID,
+		S.PATIENT_CLASS_ID,
+		SP.TARIFF_ID,
+		SP.COMPANY_DISCOUNT_RULE_ID,
+		SP.SERVICE_PRICE_ID,
+		SP.ORG_PRICE,
+		SP.DOCTOR_PRICE,
+		SP.DISCOUNT_PERCENT,
+		SP.AMOUNT,
+		SP.IS_SERVICE_CD_EDIT_OP,
+		SP.PRICE,
+		SP.ORG_PCT,
+		SP.COST,
+		SP.DOCTOR_PCT,
+		SP.COLOR_CD,
+		SP.IS_QTY_EDIT_OP,
+		SP.IS_RATE_EDIT_OP,
+		SP.IS_SERVICE_NAME_EDIT
+	FROM TEMP_INNER_QUERY S
+	LEFT JOIN CTE_PRICES SP ON (SP.SERVICE_ID::INT = S.SERVICE_ID 
+								AND SP.DOCTOR_ID = S.DOCTOR_ID
+								AND SP.PATIENT_CLASS_ID = S.PATIENT_CLASS_ID)
+	);
+ 	
+ 			SELECT
+				SERVICE_NAME,
+				SERVICE_ID,
+				COALESCE(SERVICE_PRICE_ID, 0) SERVICE_PRICE_ID,
+				PRICE_WITH_GST,
+				TAX_AMOUNT,
+				COALESCE(PRICE, 0) PRICE,
+				COALESCE(ORG_PRICE, 0) ORG_PRICE,
+				COALESCE(DOCTOR_PRICE, 0) DOCTOR_PRICE,
+				COALESCE(EMERGENCY_PRICE, 0) EMERGENCY_PRICE,
+				EMERGENCY_PRICE_WITH_GST,
+				SERVICE_TYPE_NAME,
+				SERVICE_GROUP_ID,
+				SERVICECLASS_ID,
+				SERVICE_CD,
+				SERVICE_GROUP,
+				SERVICE_TYPE_ID,
+				DOCTOR_ID,
+				PATIENT_CLASS_ID,
+				EFFECT_FROM_DT,
+				EFFECT_TO_DT,
+				RECORD_STATUS,
+				AMOUNT,
+				TARIFF_ID,
+				COLOR_CD,
+				DEPARTMENT_ID,
+				EQUI_SERVICE_CD,
+				EQUI_SERVICE_NAME,
+				CONSULTATION_TYPE_ID,
+				IS_FOREIGN_SERVICE,
+				IS_CLINICAL_HIST_REQ,
+				GENDER_ID,
+				HISTORY_TYPE_ID,
+				MIN_PRICE,
+				MAX_PRICE,
+				NO_NEED_SRV,
+				CONCERN_FORM_REQ,
+				PRIV_SRV_POSTED_DT,
+				NO_NEED_DAYS,
+				QYT_EDIT,
+				RATE_EDIT,
+				IS_APPOINTMENT,
+				CMP_DISC_PCNT,
+				COMPANY_ID,
+				EMP_PERCENT,
+				ORG_PERCENT,
+				EMP_PRICE,
+				ORG_PERCENT_PRICE,
+				FROM_DAYS,
+				TO_DAYS,
+				IS_POST,
+				IS_CASH,
+				IS_SHOW,
+				NON_SHOW,
+				TARIFF_CD,
+				IS_REG_FEE_INCLUDED,
+				OP_TRAN_ALLOWED,
+				STOP_CONS,
+				REFRL_QTY,
+				COST_PRICE,
+				SERVICE_DEPENDS,
+				UTILIZED_REFRL_QTY,
+				MAX_OPT_SERVICES_ALLOWED,
+				UTILZ_CMP_RULE_QTY,
+				CMO_RUL_QTY,
+				IS_REMARKS_MANDATORY,
+				IS_SRV_GUIDELINES_REQUIRED,
+				IS_CONSENT_FORM,
+				IS_SRV_CHECKLIST_REQUIRED,
+				IS_ADDITIONAL,
+				DISCOUNT_PERCENT,
+				IS_SRV_INSTRUCTION_REQ,
+				DOC_HOL_STATUS,
+				CMP_PKG_EXIST,
+				SERVICE_UNICODE,
+				UNI_SERVICE_TYPE_ID,
+				STATUS,
+				FROM_DT,
+				TO_DT,
+				SERVICE_QUESTION_TEMPLATE_ID,
+				PRESCRIPTION_CHARGE_TYPE_ID,
+				IS_DOCTOR_REQUIRED,
+				IS_SCHEDULE_REQUIRED,
+				VISIT_TYPE,
+				BILLING_HEAD_ID,
+				COALESCE(DOCTOR_PCT, 0) DOCTOR_PCT,
+				COALESCE(ORG_PCT, 0) ORG_PCT,
+				IS_FAVORITE_SERVICE,
+				IS_GST_APPLICABLE,
+				COALESCE(
+					(
+						CASE
+							WHEN (COALESCE('YES', 'NO')) = 'NO' THEN 0
+							ELSE TAX_PCT
+						END
+					),
+					0
+				) AS TAX_PCT,
+				SGST_PCT,
+				(TAX_AMOUNT * (SGST_PCT / 100)) AS SGST_AMOUNT,
+				CGST_PCT,
+				(TAX_AMOUNT * (CGST_PCT / 100)) AS CGST_AMOUNT,
+				SAC_CD,
+				CONC_PCT,
+				CNCSN_RULE_ID,
+				CNCSN_RULE_NAME,
+				DEFINE_BY_ID,
+				NULL AS AUTH_NAME,
+				IS_SERVICE_CD_EDIT_OP,
+				IS_SERVICE_NAME_EDIT
+			FROM
+				(
+					SELECT
+						SERVICE_NAME,
+						SERVICE_ID,
+						SERVICE_PRICE_ID,
+						(
+							CASE
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'Y'
+								) THEN PRICE
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'N'
+								) THEN CAST(
+									((PRICE * (TAX_PCT / 100)) + PRICE) AS NUMERIC(18, 2)
+								)
+								ELSE PRICE
+							END
+						) AS PRICE_WITH_GST,
+						(
+							CASE
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'Y'
+								) THEN CAST(
+									(PRICE - (PRICE / ((TAX_PCT / 100) + 1))) AS NUMERIC(18, 2)
+								)
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'N'
+								) THEN CAST((PRICE * (TAX_PCT / 100)) AS NUMERIC(18, 2))
+								ELSE 0
+							END
+						) AS TAX_AMOUNT,
+						(
+							CASE
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'Y'
+								) THEN CAST((PRICE / ((TAX_PCT / 100) + 1)) AS NUMERIC(18, 2))
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'N'
+								) THEN PRICE
+								ELSE PRICE
+							END
+						) AS PRICE,
+						ORG_PRICE,
+						DOCTOR_PRICE,
+						(
+							CASE
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'Y'
+								) THEN CAST(
+									(EMERGENCY_PRICE / ((TAX_PCT / 100) + 1)) AS NUMERIC(18, 2)
+								)
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'N'
+								) THEN EMERGENCY_PRICE
+								ELSE EMERGENCY_PRICE
+							END
+						) AS EMERGENCY_PRICE,
+						(
+							CASE
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'Y'
+								) THEN EMERGENCY_PRICE
+								WHEN (
+									(COALESCE(IS_GST_APPLICABLE, 'N')) = 'Y'
+									AND ('YES') = 'YES'
+									AND (COALESCE(IS_TAX_INCLUDE_EXCLUDE, 'N')) = 'N'
+								) THEN CAST(
+									(
+										(EMERGENCY_PRICE * (TAX_PCT / 100)) + EMERGENCY_PRICE
+									) AS NUMERIC(18, 2)
+								)
+								ELSE PRICE
+							END
+						) AS EMERGENCY_PRICE_WITH_GST,
+						SERVICE_TYPE_NAME,
+						SERVICE_GROUP_ID,
+						SERVICECLASS_ID,
+						SERVICE_CD,
+						SERVICE_GROUP,
+						SERVICE_TYPE_ID,
+						DOCTOR_ID,
+						PATIENT_CLASS_ID,
+						EFFECT_FROM_DT,
+						EFFECT_TO_DT,
+						RECORD_STATUS,
+						AMOUNT,
+						TARIFF_ID,
+						COLOR_CD,
+						DEPARTMENT_ID,
+						EQUI_SERVICE_CD,
+						EQUI_SERVICE_NAME,
+						CONSULTATION_TYPE_ID,
+						IS_FOREIGN_SERVICE,
+						IS_CLINICAL_HIST_REQ,
+						GENDER_ID,
+						HISTORY_TYPE_ID,
+						MIN_PRICE,
+						MAX_PRICE,
+						NO_NEED_SRV,
+						CONCERN_FORM_REQ,
+						PRIV_SRV_POSTED_DT,
+						NO_NEED_DAYS,
+						QYT_EDIT,
+						RATE_EDIT,
+						IS_APPOINTMENT,
+						CMP_DISC_PCNT,
+						COMPANY_ID,
+						EMP_PERCENT,
+						ORG_PERCENT,
+						EMP_PRICE,
+						ORG_PERCENT_PRICE,
+						FROM_DAYS,
+						TO_DAYS,
+						IS_POST,
+						IS_CASH,
+						IS_SHOW,
+						NON_SHOW,
+						TARIFF_CD,
+						IS_REG_FEE_INCLUDED,
+						OP_TRAN_ALLOWED,
+						STOP_CONS,
+						REFRL_QTY,
+						COST_PRICE,
+						SERVICE_DEPENDS,
+						UTILIZED_REFRL_QTY,
+						MAX_OPT_SERVICES_ALLOWED,
+						UTILZ_CMP_RULE_QTY,
+						CMO_RUL_QTY,
+						IS_REMARKS_MANDATORY,
+						IS_SRV_GUIDELINES_REQUIRED,
+						IS_CONSENT_FORM,
+						IS_SRV_CHECKLIST_REQUIRED,
+						IS_ADDITIONAL,
+						DISCOUNT_PERCENT,
+						IS_SRV_INSTRUCTION_REQ,
+						DOC_HOL_STATUS,
+						CMP_PKG_EXIST,
+						SERVICE_UNICODE,
+						UNI_SERVICE_TYPE_ID,
+						STATUS,
+						FROM_DT,
+						TO_DT,
+						SERVICE_QUESTION_TEMPLATE_ID,
+						PRESCRIPTION_CHARGE_TYPE_ID,
+						IS_DOCTOR_REQUIRED,
+						IS_SCHEDULE_REQUIRED,
+						VISIT_TYPE,
+						BILLING_HEAD_ID,
+						DOCTOR_PCT,
+						ORG_PCT,
+						IS_FAVORITE_SERVICE,
+						IS_GST_APPLICABLE,
+						(
+							CASE
+								WHEN (COALESCE('YES', 'NO')) = 'NO' THEN 0
+								ELSE TAX_PCT
+							END
+						) AS TAX_PCT,
+						SGST_PCT,
+						CGST_PCT,
+						SAC_CD,
+						CONC_PCT,
+						CNCSN_RULE_ID,
+						CNCSN_RULE_NAME,
+						DEFINE_BY_ID,
+						IS_SERVICE_CD_EDIT_OP,
+						IS_SERVICE_NAME_EDIT
+					FROM
+						(
+							SELECT DISTINCT
+								SERVICE_NAME,
+								S.SERVICE_ID,
+								SP.SERVICE_PRICE_ID,
+								COALESCE(CS.PRICE, SP.PRICE) PRICE,
+								SP.ORG_PRICE,
+								SP.DOCTOR_PRICE,
+								(
+									SELECT
+										COALESCE(SR.PRICE, 0)
+									FROM
+										STPL_HIMS_P_M_DBO.SERVICE_PRICE SR
+										LEFT JOIN STPL_HIMS_P_M_DBO.COMPANY CC ON 
+										(
+											SR.TARIFF_ID = SP.TARIFF_ID
+											AND CC.COMPANY_ID = 47
+											AND CC.LOC_ID = 1
+											AND (CC.RECORD_STATUS) = 'A'
+										)
+									WHERE
+										SR.SERVICE_ID = 6
+										AND 
+										(
+											PATIENT_CLASS_ID = 2
+											OR PATIENT_CLASS_ID = 3
+											OR PATIENT_CLASS_ID = 0
+										)
+										AND CONSULTATION_TYPE_ID = 2
+										AND (SR.RECORD_STATUS) = 'A'
+										AND SR.GRP_ID = 1
+										AND SR.ORG_ID = 1
+										AND SR.LOC_ID = 1
+									LIMIT
+										1
+								) AS EMERGENCY_PRICE,
+								
+								S.SERVICE_TYPE_NAME,
+								S.SERVICE_GROUP_ID,
+								S.SERVICECLASS_ID,
+								S.SERVICE_CD,
+								S.SERVICE_GROUP,
+								S.SERVICE_TYPE_ID,
+								S.DOCTOR_ID,
+								S.PATIENT_CLASS_ID,
+								SUBSTRING(
+									TO_CHAR(
+										S.EFFECT_FROM_DT + (330 || 'MINUTE')::INTERVAL,
+										'YYYY-MM-DD HH24:MI:SS'
+									),
+									1,
+									64
+								) EFFECT_FROM_DT,
+								SUBSTRING(
+									TO_CHAR(
+										S.EFFECT_TO_DT + (330 || 'MINUTE')::INTERVAL,
+										'YYYY-MM-DD HH24:MI:SS'
+									),
+									1,
+									64
+								) EFFECT_TO_DT,
+								S.RECORD_STATUS,
+								SP.AMOUNT,
+								SP.TARIFF_ID,
+								SP.COLOR_CD,
+								S.DEPARTMENT_ID,
+								STPL_HIMS_P_M_DBO.FN_GET_EQUI_SERVICE_CD (SP.SERVICE_ID::INT, SP.TARIFF_ID) EQUI_SERVICE_CD,
+								STPL_HIMS_P_M_DBO.FN_GET_EQUELENT_TARIFF_SRV_NAME (SP.TARIFF_ID, SP.SERVICE_ID) EQUI_SERVICE_NAME,
+								S.CONSULTATION_TYPE_ID,
+								S.IS_FOREIGN_SERVICE,
+								IS_CLINICAL_HIST_REQ,
+								GENDER_ID,
+								HISTORY_TYPE_ID,
+								MIN_PRICE,
+								MAX_PRICE,
+								(
+									CASE
+										WHEN EXTRACT
+										(
+											DAY
+											FROM
+												DATE_TRUNC
+												(
+													'DAY',
+													(CURRENT_TIMESTAMP(3) AT TIME ZONE 'UTC')::TIMESTAMP
+												) - DATE_TRUNC
+												(
+													'DAY',
+													(
+														COALESCE
+														(
+															V.SRV_POSTED_DT,
+															CURRENT_TIMESTAMP(3) AT TIME ZONE 'UTC'
+														)
+													)::TIMESTAMP
+												)
+										) >= COALESCE(NO_NEED_DAYS, '0') THEN 'N'
+										ELSE 'Y'
+									END
+								) NO_NEED_SRV,
+								CONCERN_FORM_REQ,
+								SUBSTRING(
+									TO_CHAR(
+										V.SRV_POSTED_DT + (330 || 'MINUTE')::INTERVAL,
+										'YYYY-MM-DD HH24:MI:SS'
+									),
+									1,
+									64
+								) PRIV_SRV_POSTED_DT,
+								NO_NEED_DAYS,
+								CASE
+									WHEN 47 > 0 THEN SP.IS_QTY_EDIT_OP
+									ELSE QYT_EDIT
+								END QYT_EDIT,
+								CASE
+									WHEN 47 > 0 THEN SP.IS_RATE_EDIT_OP
+									ELSE S.RATE_EDIT
+								END RATE_EDIT,
+								IS_APPOINTMENT,
+								COALESCE(
+									NULLIF(
+										CASE
+											WHEN 1 = 5 THEN CS2.CONC_PCT
+											ELSE SP.DISCOUNT_PERCENT
+										END,
+										0
+									),
+									SP.DISCOUNT_PERCENT
+								) AS CMP_DISC_PCNT,
+								CT.COMPANY_ID,
+								COALESCE(CS.EMP_PER, EMP_PERCENT) EMP_PERCENT,
+								COALESCE(CS.ORG_PER, ORG_PERCENT) ORG_PERCENT,
+								(
+									(
+										COALESCE(CS.PRICE, SP.PRICE) * COALESCE(CS.EMP_PER, CC.EMP_PERCENT)
+									) / 100
+								) AS EMP_PRICE,
+								(
+									(
+										COALESCE(CS.PRICE, SP.PRICE) * COALESCE(CS.ORG_PER, CC.ORG_PERCENT)
+									) / 100
+								) AS ORG_PERCENT_PRICE,
+								S.FROM_AGE FROM_DAYS,
+								S.TO_AGE TO_DAYS,
+								COALESCE(V.IS_POST, 'N') IS_POST,
+								COALESCE(CI.IS_CASH, 'N') IS_CASH,
+								COALESCE(CI.IS_SHOW, 'N') IS_SHOW,
+								NON_SHOW,
+								TARIFF_CD,
+								NULL IS_REG_FEE_INCLUDED,
+								OP_TRAN_ALLOWED,
+								'N' STOP_CONS,
+								REFRL_QTY,
+								SP.COST COST_PRICE,
+								SERVICE_DEPENDS,
+								UTILIZED_REFRL_QTY,
+								MAX_OPT_SERVICES_ALLOWED,
+								UTILZ_CMP_RULE_QTY,
+								CMO_RUL_QTY,
+								IS_REMARKS_MANDATORY,
+								S.IS_SRV_GUIDELINES_REQUIRED,
+								S.IS_CONSENT_FORM,
+								S.IS_SRV_CHECKLIST_REQUIRED,
+								CASE
+									WHEN S.DISCOUNT_PERCENT > 0 THEN 'Y'
+									ELSE 'N'
+								END IS_ADDITIONAL,
+								S.DISCOUNT_PERCENT,
+								S.IS_SRV_INSTRUCTION_REQ,
+								'N' DOC_HOL_STATUS,
+								CMP_PKG_EXIST,
+								SERVICE_UNICODE,
+								UNI_SERVICE_TYPE_ID,
+								'N' STATUS,
+								FROM_DT,
+								TO_DT,
+								S.SERVICE_QUESTION_TEMPLATE_ID,
+								0 PRESCRIPTION_CHARGE_TYPE_ID,
+								IS_DOCTOR_REQUIRED,
+								NULL IS_SCHEDULE_REQUIRED,
+								VISIT_TYPE,
+								S.BILLING_HEAD_ID,
+								SP.DOCTOR_PCT,
+								SP.ORG_PCT,
+								IS_FAVORITE_SERVICE,
+								S.IS_GST_APPLICABLE AS IS_GST_APPLICABLE,
+								S.TAX_PCT AS TAX_PCT,
+								S.IS_TAX_INCLUDE_EXCLUDE AS IS_TAX_INCLUDE_EXCLUDE,
+								S.SGST_PCT,
+								S.CGST_PCT,
+								S.SAC_CD,
+								COALESCE(CS2.CONC_PCT, 0) CONC_PCT,
+								COALESCE(NULL, 0) CNCSN_RULE_ID,
+								COALESCE(NULL, '') CNCSN_RULE_NAME,
+								COALESCE(CS2.AUTH_ID, 0) DEFINE_BY_ID,
+								SP.IS_SERVICE_CD_EDIT_OP,
+								SP.IS_SERVICE_NAME_EDIT
+							FROM
+								(
+									SELECT
+										 *
+										 FROM TEMP_INNER_QUERY S
+								)AS S
+								LEFT JOIN STPL_HIMS_P_M_DBO.VW_SRV_POSTED_DT_OP V ON 
+								(
+									S.SERVICE_ID = V.SERVICE_ID
+									AND V.DOCTOR_ID = S.DOCTOR_ID
+									AND V.UMR_NO = 'SRH0148919'
+								)
+								LEFT JOIN STPL_HIMS_P_M_DBO.COMPANY_SERVICE CS ON 
+								(
+									S.SERVICE_ID = CS.SERVICE_ID
+									AND CS.CMP_ID = 47
+									AND CS.RECORD_STATUS = 'A'
+								)
+								LEFT JOIN TEMP_SERVICE_COMPANY_PRICE SP ON(
+									SP.SERVICE_ID=S.SERVICE_ID
+									AND SP.DOCTOR_ID=S.DOCTOR_ID
+									AND SP.PATIENT_CLASS_ID=S.PATIENT_CLASS_ID
+								)
+								 
+								LEFT JOIN STPL_HIMS_P_M_DBO.COMPANY_TARIFF CT ON 
+								(
+									CT.TARIFF_ID = SP.TARIFF_ID
+									AND CT.COMPANY_ID = 47
+									AND CT.PATIENT_CLASS_ID = 2
+									AND (CT.RECORD_STATUS) = 'A'
+								)
+								LEFT JOIN STPL_HIMS_P_M_DBO.COMPANY_ITEM CI ON 
+								(
+									S.SERVICE_ID = CI.SERVICE_ID
+									AND CI.COMPANY_ID = 47
+									AND (CI.RECORD_STATUS) = 'A'
+								)
+								LEFT JOIN STPL_HIMS_P_M_DBO.COMPANY_COPAY CC ON 
+								(
+									CC.COMPANY_ID = CT.COMPANY_ID
+									AND CC.PATIENT_CLASS_ID = 2
+									AND CC.LOC_ID = 1
+									AND (CC.RECORD_STATUS) = 'A'
+								)
+								LEFT OUTER 	JOIN LATERAL STPL_HIMS_P_M_DBO.FN_GET_SERVICE_CNSCN_RULE_OP 
+								(
+ 									(CASE WHEN COALESCE(NULL,'') <> '' AND COALESCE(NULL,'FALSE')
+									 = 'TRUE' THEN NULL ELSE SP.COMPANY_DISCOUNT_RULE_ID END),
+									S.SERVICE_ID::INT,
+									0,
+									S.SERVICE_GROUP_ID,
+									S.SERVICE_TYPE_ID,
+									1,
+									1000
+								) AS CS2 ON TRUE
+							WHERE
+								S.TARIFF_ID = COALESCE(SP.TARIFF_ID, 1)
+						) AS BODY
+			) AS BODY1;
+
+
+
+ 

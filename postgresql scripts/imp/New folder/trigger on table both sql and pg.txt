@@ -1,0 +1,11 @@
+SELECT T.NAME AS NAME,TR.NAME AS TRNAME,TR.*
+FROM SYS.TRIGGERS TR
+JOIN SYS.TABLES T ON(TR.PARENT_ID=T.OBJECT_ID)
+WHERE T.NAME IN('FO_BILL','FO_BILL_SRV');
+
+
+
+
+select * from information_schema.triggers where 
+ (event_object_schema)='stpl_hims_p_m_dbo'
+and event_object_table in ('fo_bill','fo_bill_srv')

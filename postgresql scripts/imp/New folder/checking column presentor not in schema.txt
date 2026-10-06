@@ -1,0 +1,4 @@
+select table_schema,
+table_name,
+column_name from information_schema.columns
+where column_name='bank_name' and table_schema ='stpl_hims_p_m_dbo'

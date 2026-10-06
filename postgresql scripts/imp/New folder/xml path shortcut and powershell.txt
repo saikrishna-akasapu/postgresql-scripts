@@ -1,0 +1,8 @@
+=LEFT(A1,LEN(A1)-1)&" PATH '@"&LEFT(A1,FIND(" ",A1)-1)&"'," LAST COLUMN  ERROR FORMULA
+
+
+=TRIM(A4)&" PATH '@"&LEFT(A4,IFERROR(FIND(" ",A4&" "),LEN(A4)+1)-1)&"'"&IF(A5<>"",",","") 
+
+.SUVARNA01> powershell -ExecutionPolicy Bypass -File "C:\Users\STPL626\Desktop\run_proc3.ps1" -ProcName PR_GET_DEPARTMENT_STATISTICS_REPORT
+
+

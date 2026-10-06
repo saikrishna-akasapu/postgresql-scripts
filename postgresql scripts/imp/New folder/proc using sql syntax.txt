@@ -1,0 +1,15 @@
+select n.nspname as schema_name,
+p.proname as proc_name 
+from pg_proc p
+join pg_namespace n on (n.oid=p.pronamespace)
+where p.prokind='p'
+and (pg_get_functiondef(p.oid) ilike '%OPENROWSET%'
+OR pg_get_functiondef(p.oid) ilike '%ISNULL%'
+OR pg_get_functiondef(p.oid) ilike '%GETDATE%'
+OR pg_get_functiondef(p.oid) ilike '%NVARCHAR%'
+OR pg_get_functiondef(p.oid) ilike '%VARCHAR(%'
+OR pg_get_functiondef(p.oid) ilike '%TOP%'
+OR pg_get_functiondef(p.oid) ilike '%@@%')
+and pg_get_functiondef(p.oid) ilike '%VINOD%';
+
+ 

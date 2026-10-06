@@ -1,0 +1,36 @@
+with recursive proc_source as(
+
+select p.oid,
+n.nspname as schema_name,
+p.proname as procedure_name,
+pg_get_functiondef(p.oid)as defination,
+array[p.proname]as path
+from pg_proc p
+join pg_namespace n on (n.oid=p.pronamespace)
+where p.proname ='pr_get_reorder_items_new_auto_insert'
+and n.nspname ='stpl_hims_p_m_dbo'
+union all 
+select c.oid,
+c.schema_name,
+c.procedure_name,
+c.defination,
+ph.path ||c.procedure_name
+from (
+select p.oid,
+n.nspname as schema_name,
+p.proname as procedure_name,
+pg_get_functiondef(p.oid)as defination,
+array[p.proname]as path
+from pg_proc p
+join pg_namespace n on (n.oid=p.pronamespace)
+where p.prokind in ('p','f')
+and n.nspname ='stpl_hims_p_m_dbo' 
+)c
+join proc_source ph on 
+c.defination ilike '%'|| ph.procedure_name ||'%'
+and not (c.procedure_name =any(ph.path))
+)
+
+select distinct schema_name,procedure_name,path
+from proc_source
+ order by path;

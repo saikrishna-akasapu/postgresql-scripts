@@ -1,0 +1,23 @@
+select proname as function_name
+,count(*)as function_count
+from
+pg_proc p
+join
+ pg_namespace n on n.oid=p.pronamespace
+ where n.nspname in('stpl_hims_p_m_dbo' ,'stpl_hims_p_m_sq')
+ and p.prokind='p'
+ and proname in (
+'fn_tr_log_upd_healthcard_usage_tran',
+'fun_get_lb_dispatch_time',
+'fn_tr_log_upd_help',
+'fun_get_lb_dispatch_time_back',
+'fn_tr_log_upd_hic_activity_schedule',
+'fun_get_lb_dispatch_time_his_lab',
+'fn_tr_log_upd_hic_activity_schedule_det',
+'func_charge_increment',
+'fn_tr_log_upd_hic_hai_trn',
+'func_get_regtoken_no',
+'fn_tr_log_upd_hic_hc_sch'
+ )
+ group by p.proname
+ having count(*)>1;

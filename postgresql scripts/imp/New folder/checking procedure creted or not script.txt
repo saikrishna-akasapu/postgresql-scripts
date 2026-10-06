@@ -1,0 +1,55 @@
+WITH
+	INPUT_PROCS AS (
+		SELECT
+			UNNEST(
+				ARRAY[
+'pr_get_item_stp',
+'pr_get_vehicle_details_ext',
+'rpr_getall_pending_mrqs_db',
+'pr_get_documents_by_rolemod',
+'pr_get_moduleidmult',
+'pr_get_pat_spe_proc',
+'pr_get_antibiotics_det_by_comp',
+'pr_get_app_patient',
+'pr_get_st_rejected_items_in_micl_report_sms',
+'phr_pr_get_lifestyledetails',
+'phr_pr_get_category_type',
+'pr_del_customer_sub',
+'pr_get_st_allergies_auto'
+
+
+
+				]
+			) AS PROC_NAME
+	),
+	matched_procs as (
+         select p.proname,
+		 n.nspname
+		 from pg_proc p
+		 join pg_namespace n on n.oid=p.pronamespace
+		 where n.nspname ='stpl_hims_p_m_dbo'  or  n.nspname ='stpl_hims_p_m_gn' OR N.NSPNAME ='stpl_hims_p_m_se' OR n.nspname='stpl_hims_p_m_neg'
+		 or n.nspname='stpl_hims_p_m_ms' or n.nspname='stpl_hims_p_m_acc' or n.nspname='stpl_hims_p_m_sq' OR N.NSPNAME='stpl_hims_p_m_mci'
+		  OR N.NSPNAME='stpl_hims_p_m_sap' OR N.NSPNAME='stpl_hims_p_m_su' OR N.NSPNAME='stpl_hims_p_m_ma'
+	), 
+	results as (
+
+SELECT
+	I.PROC_NAME,
+	CASE
+		WHEN m.PRONAME IS NOT NULL THEN 'created'
+		ELSE 'not created'
+	END AS STATUS
+FROM
+	INPUT_PROCS I
+	LEFT JOIN matched_procs m ON i.proc_name = m.proname
+	)
+
+	select * from results
+	union all
+	select 'Total created ' as proc_name,
+	count(*)::text as status
+	from results where status='created'
+	union all
+	select 'not created',
+	count(*)::text 
+	from results where status='not created';

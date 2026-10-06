@@ -1,0 +1,1 @@
+select count(*) from information_schema.columns where table_schema ='stpl_hims_p_m_dbo' and table_name ='st_stp';

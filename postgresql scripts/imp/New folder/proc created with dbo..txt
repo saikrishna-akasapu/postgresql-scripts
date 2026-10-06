@@ -1,0 +1,8 @@
+select n.nspname as schema_name,
+p.proname as proc_name 
+from pg_proc p
+join pg_namespace n on (n.oid=p.pronamespace)
+where p.prokind='p'
+and (pg_get_functiondef(p.oid) ilike 'dbo.%')
+
+ 

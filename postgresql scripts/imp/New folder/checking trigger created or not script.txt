@@ -1,0 +1,57 @@
+WITH
+	INPUT_TRIGGERS AS (
+		SELECT
+			UNNEST(
+				ARRAY[
+'tr_b_u_r_st_trn',
+'tr_ins_adt_fund_allocation_std',
+'tr_ins_adt_imr_std',
+'tr_drop_history',
+'tr_ins_invalid_and_knoff_pat_std',
+'tr_ins_nurse_req_doctor_std',
+'tr_ins_fo_bill_cncsn_std',
+'tr_ins_assay_spec_col_srv_std',
+'tr_ins_st_nrq_cncl_item_std',
+'tr_ins_dt_diet_init_std',
+'tr_ins_adt_fund_transfer_std'
+
+
+
+
+				]
+			) AS TRIGGER_NAME
+	),
+	matched_triggers as (
+         select t.tgname as trigger_name,
+		 n.nspname as schema_name,
+		 c.relname as table_name
+		 from pg_trigger t
+		 join pg_class c on(c.oid=t.tgrelid)
+		 join pg_namespace n on n.oid=c.relnamespace
+		 where t.tgisinternal=false
+		 and n.nspname ='stpl_hims_p_m_dbo'  or  n.nspname ='stpl_hims_p_m_gn' OR N.NSPNAME ='stpl_hims_p_m_se' OR n.nspname='stpl_hims_p_m_neg'  OR N.NSPNAME ='stpl_hims_p_m_trns'
+		 or n.nspname='stpl_hims_p_m_ms' or n.nspname='stpl_hims_p_m_acc' or n.nspname='stpl_hims_p_m_sq' OR N.NSPNAME='stpl_hims_p_m_mci'
+		  OR N.NSPNAME='stpl_hims_p_m_sap' OR N.NSPNAME='stpl_hims_p_m_su' OR N.NSPNAME='stpl_hims_p_m_ma'
+	), 
+	results as (
+
+SELECT
+	I.TRIGGER_NAME,
+	CASE
+		WHEN m.TRIGGER_NAME IS NOT NULL THEN 'created'
+		ELSE 'not created'
+	END AS STATUS
+FROM
+	INPUT_TRIGGERS I
+	LEFT JOIN matched_triggers m ON i.TRIGGER_NAME = m.TRIGGER_NAME
+	)
+
+	select * from results
+	union all
+	select 'Total created ' as TRIGGER_NAME,
+	count(*)::text as status
+	from results where status='created'
+	union all
+	select 'not created',
+	count(*)::text 
+	from results where status='not created';

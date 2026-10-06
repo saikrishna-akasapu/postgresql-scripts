@@ -1,0 +1,26 @@
+
+SELECT 
+'CALL stpl_hims_p_m_dbo.pr_getall_vw_assay_bill_pat_his_lab(' ||
+	STRING_AGG(
+			p.parameter_name || ' := ' ||
+			case 
+				WHEN p.data_type = 'integer' then '1'
+				when p.data_type ilike 'timestamp%' then '''2025-01-01'''
+				when p.data_type = 'bpchar' then '''bpchar'''
+				when p.data_type = 'character' then '''char'''
+				when p.data_type in  ('character varying','text' ) then 'NULL'
+				else 'NULL'
+			end,
+			', '
+			order by p.ordinal_position
+	)||
+	');'
+	from information_schema.parameters p
+	where  p.parameter_mode in('IN','INOUT')
+	and p.specific_name IN (
+				SELECT SPECIFIC_NAME 
+				FROM information_schema.ROUTINES
+				WHERE ROUTINE_NAME = 'pr_getall_vw_assay_bill_pat_his_lab'
+				AND SPECIFIC_SCHEMA='stpl_hims_p_m_dbo'
+	) ;
+ 

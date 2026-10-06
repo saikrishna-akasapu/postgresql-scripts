@@ -1,0 +1,42 @@
+WITH
+	INPUT_views AS (
+		SELECT
+			UNNEST(
+				ARRAY[
+ 'vw_indexparameters_mrd',
+'vw_indnt_lab_cnt',
+'vw_indnt_lab_phr',
+'vw_indnt_lab_phr_dept_wise',
+'vw_ingredient_source',
+'vw_ingredient_type'
+
+				]
+			) AS view_NAME
+	),
+	matched_views as (
+         select table_name
+		 from information_schema.views
+ 		 where table_schema ='stpl_hims_p_m_dbo' or  table_schema ='stpl_hims_p_m_acc'
+	),
+	results as (
+
+SELECT
+	I.view_NAME,
+	CASE
+		WHEN m.table_name IS NOT NULL THEN 'created'
+		ELSE 'not created'
+	END AS STATUS
+FROM
+	INPUT_views I
+	LEFT JOIN matched_views m ON i.view_NAME = m.table_name
+	)
+
+	select * from results
+	union all
+	select 'Total exists' as view_NAME,
+	count(*)::text as status
+	from results where status='created'
+	union all
+	select 'not created',
+	count(*)::text 
+	from results where status='not created';
